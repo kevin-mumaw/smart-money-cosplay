@@ -1,0 +1,18 @@
+{
+  "_comment": "Tune these first before touching scanner logic. Start loose, tighten once you see how much noise comes through.",
+
+  "min_volume": 500,
+  "_min_volume_note": "Absolute contract volume floor. Below this, ratios are meaningless (10 vol / 2 OI = 5x ratio but it's nothing).",
+
+  "min_vol_oi_ratio": 3.0,
+  "_min_vol_oi_ratio_note": "Today's volume as a multiple of existing open interest. 3x+ means most of today's activity is new positioning, not rolls.",
+
+  "min_notional": 50000,
+  "_min_notional_note": "volume * last_price * 100. Filters out small retail-sized clutter. $50k is a starting point, not gospel.",
+
+  "max_dte": 30,
+  "_max_dte_note": "Days to expiration cap. Short-dated positioning suggests a near-term catalyst thesis (the PLTR example was ~2 weeks out).",
+
+  "otm_only": true,
+  "_otm_only_note": "If true, only flags out-of-the-money contracts (classic directional bet pattern). Set false to include ITM/ATM."
+}

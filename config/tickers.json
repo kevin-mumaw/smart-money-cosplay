@@ -1,0 +1,19 @@
+{
+  "_comment": "Starter universe -- liquid names + a few from your existing Second Layer Capital watchlist. Expand freely.",
+  "tickers": [
+    "SPY",
+    "QQQ",
+    "AAPL",
+    "NVDA",
+    "TSLA",
+    "MSFT",
+    "AMZN",
+    "META",
+    "PLTR",
+    "AVAV",
+    "KTOS",
+    "AXON",
+    "AMD",
+    "GOOGL"
+  ]
+}
