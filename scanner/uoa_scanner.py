@@ -1,8 +1,14 @@
 """
-Smart Money Cosplay -- v1 Unusual Options Activity Scanner
+Smart Money Cosplay -- v1.1 Unusual Options Activity Scanner
 
 Scans a ticker universe for options contracts with statistically unusual
 volume relative to open interest, using free delayed data via yfinance.
+
+v1.1 changes:
+- min_dte floor excludes 0DTE/1DTE contracts, which reset open interest
+  structurally every day and produce meaningless vol/OI ratios.
+- Index ETFs (SPY/QQQ/IWM/DIA) get their own, stricter threshold bucket
+  since their baseline liquidity is not comparable to single names.
 
 Known limitation: no trade-by-trade tape here, so we cannot tell whether
 flagged volume was aggressive (bought at ask) or passive (sold at bid,
@@ -32,8 +38,21 @@ def load_config():
         tickers = json.load(f)["tickers"]
     with open(CONFIG_DIR / "thresholds.json") as f:
         raw = json.load(f)
-    thresholds = {k: v for k, v in raw.items() if not k.startswith("_")}
-    return tickers, thresholds
+
+    base = raw["base"]
+    index_tickers = set(raw.get("index_tickers", []))
+    index_overrides = raw.get("index_overrides", {})
+
+    return tickers, base, index_tickers, index_overrides
+
+
+def thresholds_for(ticker: str, base: dict, index_tickers: set, index_overrides: dict) -> dict:
+    """Resolve the effective threshold set for a given ticker."""
+    if ticker in index_tickers:
+        merged = dict(base)
+        merged.update(index_overrides)
+        return merged
+    return base
 
 
 def days_to_expiration(expiry_str: str) -> int:
@@ -54,7 +73,7 @@ def scan_ticker(ticker: str, thresholds: dict) -> pd.DataFrame:
 
     for expiry in expirations:
         dte = days_to_expiration(expiry)
-        if dte < 0 or dte > thresholds["max_dte"]:
+        if dte < thresholds["min_dte"] or dte > thresholds["max_dte"]:
             continue
 
         try:
@@ -118,13 +137,20 @@ def scan_ticker(ticker: str, thresholds: dict) -> pd.DataFrame:
 
 
 def main():
-    tickers, thresholds = load_config()
-    print(f"Scanning {len(tickers)} tickers with thresholds: {thresholds}\n")
+    tickers, base, index_tickers, index_overrides = load_config()
+    print(f"Scanning {len(tickers)} tickers.")
+    print(f"  Base thresholds: {base}")
+    if index_tickers:
+        print(f"  Index override tickers {sorted(index_tickers)}: {index_overrides}\n")
+    else:
+        print()
 
     all_results = []
     for ticker in tickers:
-        print(f"Scanning {ticker}...")
-        result = scan_ticker(ticker, thresholds)
+        t = thresholds_for(ticker, base, index_tickers, index_overrides)
+        tag = "[index]" if ticker in index_tickers else "[single]"
+        print(f"Scanning {ticker} {tag}...")
+        result = scan_ticker(ticker, t)
         if not result.empty:
             all_results.append(result)
 

@@ -6,16 +6,21 @@ A DIY unusual options activity (UOA) scanner — because the guys charging you $
 
 Scans a ticker universe for options contracts showing statistically unusual volume relative to open interest, then flags candidates for manual review. This is the raw signal-generation layer that "insider tracking" services build their marketing around. It is not insider information — it's public volume/OI data, filtered.
 
-## v1 scope (current)
+## v1.1 scope (current)
 
 - Pulls live options chains via `yfinance` (free, ~15-20 min delayed)
 - Flags contracts by:
   - **Volume / Open Interest ratio** — new positioning vs. rolled/existing
   - **Absolute volume threshold** — filters out illiquid noise
   - **Notional size** — volume × last price × 100, filters out small retail clutter
-  - **Days to expiration (DTE) cap** — short-dated bets suggest a near-term catalyst thesis
+  - **Days to expiration (DTE) floor and cap** — excludes 0DTE/1DTE (see note below), caps at a max lookout window
   - **OTM filter (optional)** — classic "someone thinks something happens soon" pattern
+- **Index ETFs (SPY, QQQ, IWM, DIA) use a separate, stricter threshold bucket** (`index_overrides` in `config/thresholds.json`) instead of the single-name thresholds. First live run flagged 295 contracts, almost entirely 1DTE SPY/QQQ/NVDA/TSLA activity that turned out to be routine daily-expiry mechanics, not genuine anomalies — see "Why the DTE floor" below.
 - Outputs a ranked CSV per scan, no scoring/weighting yet (that's v2)
+
+### Why the DTE floor exists
+
+Products with daily expirations (SPY, QQQ, and increasingly single names like NVDA/TSLA) reset open interest structurally every day — a contract expiring tomorrow only existed for a day or two, so its OI is naturally near zero. That makes vol/OI ratio meaningless for 0DTE/1DTE contracts: a 20-50x ratio there is just how those products normally trade, not a signal. `min_dte` in `config/thresholds.json` excludes these (2 days for single names, 5 for indices).
 
 ## Known limitation (read this before you trust a signal)
 
