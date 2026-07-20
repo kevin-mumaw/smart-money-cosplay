@@ -32,5 +32,15 @@
   "_index_overrides_notes": {
     "why_higher": "SPY/QQQ single-leg volume in the tens of thousands is routine. These thresholds are set high enough that a hit should actually stand out relative to typical index flow, not just reflect the product's baseline liquidity.",
     "min_dte_5": "Even non-0/1DTE weeklies on indices roll fast; pushing the floor to 5 days filters out most mechanical noise while still catching real positioning."
-  }
+  },
+
+  "earnings_filter_mode": "flag_only",
+  "_earnings_filter_mode_note": "Cross-references each ticker's next confirmed/estimated earnings date against contract expiry. 'flag_only' annotates every row with whether earnings falls before expiry but does not filter anything out (default -- a non-earnings flag can still be real, e.g. unscheduled news, dealer flow, M&A rumor). Set to 'require' to drop any contract whose expiry is before the next known earnings date. Index tickers (SPY/QQQ/IWM/DIA) are marked N/A since they have no single-company earnings date.",
+
+  "otm_tiers": {
+    "near_money_max": 5,
+    "moderate_max": 10,
+    "aggressive_max": 20
+  },
+  "_otm_tiers_note": "Classifies how far OTM a contract is (% distance strike vs spot). Added after manually checking the 5 earnings-before-expiry hits from the v1.2 run: TSLA/GOOGL strikes were within the market's own implied earnings move (plausible informed positioning), while MSFT (+15.6%) and META (+25.6%) needed moves far beyond any realistic earnings reaction -- more consistent with cheap lottery-ticket retail speculation than real size behind a thesis. Tiers: near_money (<=5%), moderate (<=10%), aggressive (<=20%), lottery (>20%). This does not filter anything out by default -- it's used to re-rank results so lottery-tier bets sort below plausible ones."
 }

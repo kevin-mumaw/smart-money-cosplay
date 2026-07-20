@@ -6,7 +6,22 @@ A DIY unusual options activity (UOA) scanner — because the guys charging you $
 
 Scans a ticker universe for options contracts showing statistically unusual volume relative to open interest, then flags candidates for manual review. This is the raw signal-generation layer that "insider tracking" services build their marketing around. It is not insider information — it's public volume/OI data, filtered.
 
-## v1.1 scope (current)
+## v1.3 scope (current)
+
+- **OTM distance tiering (new):** every contract now gets `otm_pct` (exact % distance between strike and spot) and `otm_tier` (`near_money` ≤5%, `moderate` ≤10%, `aggressive` ≤20%, `lottery` >20%). Added after manually digging into the 5 earnings-before-expiry hits from v1.2: TSLA and GOOGL strikes sat inside the options market's own implied earnings move (plausible informed positioning), while an MSFT call needed a ~16% rally and a META call needed a ~26% rally in the same window -- both far beyond any realistic earnings reaction, more consistent with cheap lottery-ticket retail speculation than real size behind a thesis.
+- Results are now sorted with earnings-before-expiry hits first, then by OTM tier (near_money/moderate ranked above aggressive/lottery), then notional size. High vol/OI ratio + deep OTM distance is not automatically a stronger signal -- it can just as easily mean retail gamma-chasing.
+- Controlled by `otm_tiers` in `config/thresholds.json`. Nothing is filtered out by default (same `flag_only`-style philosophy as the earnings layer) -- it re-ranks, it doesn't hide.
+
+## v1.2 scope
+
+- **Earnings-calendar cross-reference (new):** every flagged contract is now annotated with the ticker's next known earnings date and whether that date falls before or after the contract's expiry (`next_earnings`, `earnings_before_expiry` columns). This was added because the first v1.1 run's two most "unusual" flags (an AMD put, a PLTR cluster) both turned out to expire weeks before either company's actual earnings date — meaning the high vol/OI ratio wasn't earnings positioning at all. A flag with `earnings_before_expiry: False` isn't necessarily noise (could be an unscheduled event, M&A rumor, or dealer hedging flow worth checking manually) but it should not be read as "the market is pricing in earnings."
+- Controlled by `earnings_filter_mode` in `config/thresholds.json`:
+  - `flag_only` (default) — annotates every row, filters nothing out. Earnings-before-expiry hits are sorted to the top of the output.
+  - `require` — drops any contract whose expiry is before the next known earnings date. Use this once you've decided you only care about earnings-driven positioning.
+  - Index tickers (SPY/QQQ/IWM/DIA) are marked `N/A (index)` since they have no single-company earnings date.
+- Earnings dates come from `yfinance`'s `get_earnings_dates()`, which is estimate-based until a company formally confirms — treat as directionally useful, not exact, especially for dates further out.
+
+## v1.1 scope
 
 - Pulls live options chains via `yfinance` (free, ~15-20 min delayed)
 - Flags contracts by:
